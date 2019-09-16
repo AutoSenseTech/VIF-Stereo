@@ -1,5 +1,5 @@
 # VIF-Stereo
-**Authors:** [Weihan Wang],[Junhong Chen]
+**Authors:** [Weihan Wang](https://github.com/wwtx9/),[Junhong Chen](https://github.com/JohnChen-PCL)
 
 ## EuRoC Dataset
 ```
