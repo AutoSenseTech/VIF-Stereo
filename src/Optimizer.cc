@@ -242,8 +242,8 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
     }
 
 
-//    const double thHuberStatePRVB = sqrt(30.5779); //30.5779 for 15DOF
-//    //Set edge in the local window
+    const double thHuberStatePRVB = sqrt(30.5779); //30.5779 for 15DOF
+    //Set edge in the local window
 //    for(list<KeyFrame*>::const_iterator lit = lLocalKeyFrames.begin(); lit != lLocalKeyFrames.end(); lit++)
 //    {
 //        KeyFrame *pKF_j = *lit;

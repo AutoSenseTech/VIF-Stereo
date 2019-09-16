@@ -92,7 +92,6 @@ void LocalMapping::Run()
                         cout<<"(LocalMapping Thread): LocalBundleAdjustment Visual-Inertial optimization"<<endl;
                         cout<<"(LocalMapping Thread): Frame id: "<<mpCurrentKeyFrame->mnId<<endl;
                         Optimizer::LocalVisualInertialBA(mpCurrentKeyFrame, lLocalKeyFrames, &mbAbortBA, mpMap, mpTracker->g);
-                        //Optimizer::LocalBAPRVIDP(mpCurrentKeyFrame, lLocalKeyFrames, &mbAbortBA, mpMap, mpTracker->g);
                         cout<<"(LocalMapping Thread):"<<mpCurrentKeyFrame->mnId<<" Visual-Inertial BA END"<<endl;
                     }
                 }

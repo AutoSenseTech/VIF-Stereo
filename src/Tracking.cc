@@ -591,7 +591,7 @@ bool Tracking::StereoIMUInitialization()
                 //calculate the pre-integration for current frame
                 double current_time = -1.0;
                 mCurrentFrame.processIMUPreIntegration(mCurrentFrame.vIMUDataByCurrentFrame, current_time);
-                cout<<"Process IMU PreIntegration Finished!" <<endl;
+                //cout<<"Process IMU PreIntegration Finished!" <<endl;
                 processIntegration(current_time, mCurrentFrame.vIMUDataByCurrentFrame, first_imu);
             }
             else
@@ -664,7 +664,7 @@ bool Tracking::StereoIMUInitialization()
             cout<<"VIF-SLAM System Stereo-IMU Initialization Successful"<<endl;
             vframeBuffForInit.clear();
             mState=OK;
-            SetVINSInited(result);
+            mbVINSInited = result;
             return result;
         }
         else
@@ -672,6 +672,7 @@ bool Tracking::StereoIMUInitialization()
             cout<<"VIF-SLAM System Stereo-IMU Initialization Failed"<<endl;
             vframeBuffForInit.clear();
             mState = NOT_INITIALIZED;
+            mbVINSInited = false;
             return false;
         }
     }
@@ -1082,19 +1083,6 @@ void Tracking::StereoInitialization()
     }
 }
 
-bool Tracking::GetVINSInited()
-{
-   // unique_lock<mutex> lock(mMutexVINSInit);
-    return mbVINSInited;
-}
-
-void Tracking::SetVINSInited(bool flag)
-{
-    //unique_lock<mutex> lock(mMutexVINSInit);
-    mbVINSInited = flag;
-}
-
-
 //-----------------------------------END-------------------------------------------------//
 void Tracking::MonocularInitialization()
 {
@@ -1315,7 +1303,6 @@ bool Tracking::TrackReferenceKeyFrame()
     mCurrentFrame.Ps = Converter::toVector3d(mCurrentFrame.mOw);
     mCurrentFrame.Rc0bk = Converter::toMatrix3d(mCurrentFrame.mRwc);
     mCurrentFrame.Vs = mLastFrame.Vs;
-    cout<<"Reference Frame model: "<<endl<<mCurrentFrame.mTcw<<endl;
 
     // Discard outliers
     int nmatchesMap = 0;
@@ -1694,8 +1681,8 @@ void Tracking::CreateNewKeyFrame()
     double current_time = -1.0;
     pKF->processIMUPreIntegration(vIMUData, current_time);
     cout<<"Process IMU PreIntegration For KeyFrame("<<pKF ->mnId  <<") Finished!" <<endl;
-    bool isVINSInited = GetVINSInited();
-    pKF->SetVINSInited( isVINSInited);
+    pKF->SetVINSInited(mbVINSInited);
+    cout<<"(Tracking Thread: )KeyFrame id: "<<pKF->mnId<<"is "<<pKF->GetVINSInited()<<endl;
     mpLocalMapper->InsertKeyFrame(pKF);
     mpLocalMapper->SetNotStop(false);
     //-------------------------------------------------End---------------------------------//
