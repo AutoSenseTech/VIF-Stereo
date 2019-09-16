@@ -80,7 +80,7 @@ void LocalMapping::Run()
                 // Local BA
                 if(mpMap->KeyFramesInMap()>2)
                 {
-                    if(!mpCurrentKeyFrame->GetVINSInited())
+                    if(!mpCurrentKeyFrame->mbVINSInitedKF)
                     {
                         cout<<"(LocalMapping Thread): LocalBundleAdjustment Visual optimization"<<endl;
                         cout<<"(LocalMapping Thread): Frame id: "<<mpCurrentKeyFrame->mnId<<endl;

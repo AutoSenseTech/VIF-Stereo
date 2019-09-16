@@ -414,7 +414,7 @@ void Tracking::Track()
        {
            trackMotionStatus = Relocalization();
        }
-
+       mCurrentFrame.mbVINSInitedFrame = mbVINSInited;
        mCurrentFrame.mpReferenceKF = mpReferenceKF;
         // If we have an initial estimation of the camera pose and matching. Track the local map.
         if(!mbOnlyTracking)
@@ -554,7 +554,9 @@ bool Tracking::StereoIMUInitialization()
         if(poseOK)
         {
             mState = NOT_INITIALIZED;
-            ++frameCountInInit;
+            mbVINSInited = false;
+            mCurrentFrame.mbVINSInitedFrame = mbVINSInited;
+            frameCountInInit++;
         }
 
         else
@@ -563,6 +565,7 @@ bool Tracking::StereoIMUInitialization()
             frameCountInInit = 0;
             first_frame = true;
             vframeBuffForInit.clear();
+            mbVINSInited = false;
         }
 
 
@@ -624,7 +627,6 @@ bool Tracking::StereoIMUInitialization()
             if(NeedNewKeyFrame())
             {
                 CreateNewKeyFrame();
-
                 vFramesInConsecutiveKF.empty();
             }
             // We allow points with high innovation (considererd outliers by the Huber Function)
@@ -1681,8 +1683,8 @@ void Tracking::CreateNewKeyFrame()
     double current_time = -1.0;
     pKF->processIMUPreIntegration(vIMUData, current_time);
     cout<<"Process IMU PreIntegration For KeyFrame("<<pKF ->mnId  <<") Finished!" <<endl;
-    pKF->SetVINSInited(mbVINSInited);
-    cout<<"(Tracking Thread: )KeyFrame id: "<<pKF->mnId<<"is "<<pKF->GetVINSInited()<<endl;
+    //pKF->SetVINSInited(mbVINSInited);
+    cout<<"(Tracking Thread: )KeyFrame id: "<<pKF->mnId<<"is "<<pKF->mbVINSInitedKF<<endl;
     mpLocalMapper->InsertKeyFrame(pKF);
     mpLocalMapper->SetNotStop(false);
     //-------------------------------------------------End---------------------------------//

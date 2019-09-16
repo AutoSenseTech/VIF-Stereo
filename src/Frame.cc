@@ -49,7 +49,7 @@ Frame::Frame(const Frame &frame)
      mvScaleFactors(frame.mvScaleFactors), mvInvScaleFactors(frame.mvInvScaleFactors),
      mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2),pcurrent_IMU_intergration(frame.pcurrent_IMU_intergration),
      Rc0bk(frame.Rc0bk),tc0ck(frame.tc0ck),
-     Ps(frame.Ps), Vs(frame.Vs), Rs(frame.Rs)
+     Ps(frame.Ps), Vs(frame.Vs), Rs(frame.Rs), mbVINSInitedFrame(frame.mbVINSInitedFrame)
 {
     for(int i=0;i<FRAME_GRID_COLS;i++)
         for(int j=0; j<FRAME_GRID_ROWS; j++)

@@ -151,6 +151,7 @@ public:
     cv::Mat mRwc;
     cv::Mat mOw; //==mtwc
 
+    bool mbVINSInitedFrame;
     //-----------------------------------------END------------------------------------------------------//
 
     // Stereo baseline multiplied by fx.
