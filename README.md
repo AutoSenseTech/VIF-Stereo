@@ -4,7 +4,7 @@
 ## EuRoC Dataset
 ```
 ./Examples/Stereo/stereo_euroc Vocabulary/ORBvoc.txt Examples/Stereo/EuRoC.yaml PATH_TO_SEQUENCE/mav0/cam0/data PATH_TO_SEQUENCE/mav0/cam1/data PATH_TO_SEQUENCE/mav0/cam0/data.csv PATH_TO_SEQUENCE/mav0/imu0/data.csv
-
+```
 
 
 # ORB-SLAM2
