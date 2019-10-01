@@ -144,7 +144,7 @@ bool LocalMapping::CheckNewKeyFrames()
 void LocalMapping::AddtoLocalWindow(ORB_SLAM2::KeyFrame *pKF)
 {
     lLocalKeyFrames.push_back(pKF);
-    if(lLocalKeyFrames.size() > LocalWindowSize)
+    if(lLocalKeyFrames.size() > LocalWindowSize || lLocalKeyFrames.front()->mnId == 0)
     {
         lLocalKeyFrames.pop_front();
     }

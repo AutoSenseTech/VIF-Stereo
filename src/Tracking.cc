@@ -380,11 +380,11 @@ void Tracking::Track()
         }
         else
         {
-            vFramesInConsecutiveKF.push_back(mCurrentFrame);
+            vFramesInConsecutiveKF.push_back(this->mCurrentFrame);
             StereoIMUInitialization();
         }
     }
-    else
+    else  // after visual-inertial initialization
     {
        vFramesInConsecutiveKF.push_back(mCurrentFrame);
        bool trackMotionStatus;
@@ -744,7 +744,7 @@ bool Tracking::TrackMotionModelWithIMU()
 
     double current_time = -1.0;
     mCurrentFrame.processIMUPreIntegration(mCurrentFrame.vIMUDataByCurrentFrame, current_time);
-    cout<<"Process IMU PreIntegration Finished!" <<endl;
+    //cout<<"Process IMU PreIntegration Finished!" <<endl;
 
     processIntegration(current_time, mCurrentFrame.vIMUDataByCurrentFrame, first_imu);
 
@@ -1063,7 +1063,6 @@ void Tracking::StereoInitialization()
         mCurrentFrame.Rs = Eigen::Quaterniond::Identity().toRotationMatrix();
         pKFini->lastKeyFrame = pKFini;
         pKFini->SetVINSInited(false);
-        cout<<"(Tracking Thread): KeyFrame id: "<<pKFini->mnId<<endl;
 //------------------------------------------------END----------------------------------------------//
         mpLocalMapper->InsertKeyFrame(pKFini);
         mnLastKeyFrameId=mCurrentFrame.mnId;
@@ -1682,9 +1681,6 @@ void Tracking::CreateNewKeyFrame()
     }
     double current_time = -1.0;
     pKF->processIMUPreIntegration(vIMUData, current_time);
-    cout<<"Process IMU PreIntegration For KeyFrame("<<pKF ->mnId  <<") Finished!" <<endl;
-    //pKF->SetVINSInited(mbVINSInited);
-    cout<<"(Tracking Thread: )KeyFrame id: "<<pKF->mnId<<"is "<<pKF->mbVINSInitedKF<<endl;
     mpLocalMapper->InsertKeyFrame(pKF);
     mpLocalMapper->SetNotStop(false);
     //-------------------------------------------------End---------------------------------//

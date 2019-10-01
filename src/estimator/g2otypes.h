@@ -29,16 +29,39 @@ public:
 
     bool write(std::ostream& os) const {return true;}
 
-    virtual void setToOriginImpl() {
+    virtual void setToOriginImpl()
+    {
         _estimate =  VertexState();
     }
 
-    virtual void oplusImpl(const double* update_) {
+    virtual void oplusImpl(const double* update_)
+    {
         Eigen::Map<const Vector6d> update(update_);
         _estimate.IncSmallPR(update);
     }
 };
+//Vertex of Velocity(V) and bias construction in graph optimization
+class VertexVBias: public BaseVertex<9, VertexState>
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+    VertexVBias() : BaseVertex<9, VertexState>(){}
+
+    bool read(std::istream& is) {return true;}
+
+    bool write(std::ostream& os) const {return true;}
+
+    virtual void setToOriginImpl() {
+        _estimate = VertexState();
+    }
+
+    virtual void oplusImpl(const double* update_) {
+        Eigen::Map<const Vector9d> update(update_);
+        _estimate.IncSmallVBias(update);
+    }
+
+};
 //Vertex of Velocity(V) construction in graph optimization
 class VertexV: public BaseVertex<3, VertexState>
 {
@@ -56,8 +79,8 @@ public:
     }
 
     virtual void oplusImpl(const double* update_) {
-        Eigen::Map<const Vector3d> update(update_);
-        _estimate.IncSmallV(update);
+        Eigen::Map<const Vector9d> update(update_);
+        _estimate.IncSmallVBias(update);
     }
 
 };
@@ -76,22 +99,24 @@ public:
 
     virtual void setToOriginImpl() {
         _estimate = VertexState();
+
     }
 
     virtual void oplusImpl(const double* update_) {
         Eigen::Map<const Vector6d> update(update_);
+
         _estimate.IncSmallBias(update);
     }
 };
 
 //Edges of P,V,R, Bias in graph optimization
-class EdgeStatePRVB : public BaseMultiEdge<15, Integration*>
+class EdgeStatePRVB : public BaseMultiEdge<15, Integration>
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    EdgeStatePRVB():BaseMultiEdge<15, Integration*>()
+    EdgeStatePRVB():BaseMultiEdge<15, Integration>()
     {
-       resize(6);  // there are 6 vertex
+      resize(4);  // there are 4 vertex
     }
 
     bool read(std::istream& is) {return true;}

@@ -7,10 +7,22 @@
 
 #include <eigen3/Eigen/Dense>
 #include "utility.h"
+//#include "parameters.h"
+#include "so3.h"
 class Integration
 {
 public:
-    Integration();
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    Integration(){}
+
+//    Integration(Integration* Ig):dt(Ig->dt), acc_0(Ig->acc_0), gyr_0(Ig->gyr_0), acc_1(Ig->acc_1), gyr_1(Ig->gyr_1),
+//                                       linearized_acc(Ig->linearized_acc), linearized_gyr(Ig->linearized_gyr),
+//                                       linearized_ba(Ig->linearized_ba), linearized_bg(Ig->linearized_bg),
+//                                       jacobian(Ig->jacobian), covariance(Ig->covariance), noise(Ig->noise),
+//                                       sum_dt(Ig->sum_dt),delta_p(Ig->delta_p),delta_q(Ig->delta_q), delta_v(Ig->delta_v)
+//    {
+//
+//    }
 
     Integration(const Eigen::Vector3d &_acc_0, const Eigen::Vector3d &_gyr_0,
                     const Eigen::Vector3d &_linearized_ba, const Eigen::Vector3d &_linearized_bg)
@@ -22,6 +34,14 @@ public:
     {
 
         noise = Eigen::Matrix<double, 18, 18>::Zero();
+        double ACC_N = 0.08, ACC_W = 0.00004;
+        double GYR_N = 0.004, GYR_W= 2.0e-6;
+        noise.block<3, 3>(0, 0) =  (ACC_N * ACC_N) * Eigen::Matrix3d::Identity();
+        noise.block<3, 3>(3, 3) =  (GYR_N * GYR_N) * Eigen::Matrix3d::Identity();
+        noise.block<3, 3>(6, 6) =  (ACC_N * ACC_N) * Eigen::Matrix3d::Identity();
+        noise.block<3, 3>(9, 9) =  (GYR_N * GYR_N) * Eigen::Matrix3d::Identity();
+        noise.block<3, 3>(12, 12) =  (ACC_W * ACC_W) * Eigen::Matrix3d::Identity();
+        noise.block<3, 3>(15, 15) =  (GYR_W * GYR_W) * Eigen::Matrix3d::Identity();
 
     }
 
@@ -149,15 +169,16 @@ public:
             V.block<3, 3>(9, 12) = Eigen::MatrixXd::Identity(3,3) * _dt;
             V.block<3, 3>(12, 15) = Eigen::MatrixXd::Identity(3,3) * _dt;
 
-            //step_jacobian = F;
-            //step_V = V;
             jacobian = F * jacobian;
+            //cout<<"F: "<<F<<endl;
+            //cout<<"Jacobian: "<<jacobian<<endl;
             covariance = F * covariance * F.transpose() + V * noise * V.transpose();
+            //cout<<covariance<<endl;
         }
     }
 
-    Eigen::Matrix<double, 15, 1> evaluate(const Eigen::Vector3d &Pi, const Eigen::Quaterniond &Qi, const Eigen::Vector3d &Vi, const Eigen::Vector3d &Bai, const Eigen::Vector3d &Bgi,
-                                          const Eigen::Vector3d &Pj, const Eigen::Quaterniond &Qj, const Eigen::Vector3d &Vj, const Eigen::Vector3d &Baj, const Eigen::Vector3d &Bgj,
+    Eigen::Matrix<double, 15, 1> evaluate(const Eigen::Vector3d &Pi, const Eigen::Matrix3d &Ri, const Eigen::Vector3d &Vi, const Eigen::Vector3d &Bai, const Eigen::Vector3d &Bgi,
+                                          const Eigen::Vector3d &Pj, const Eigen::Matrix3d &Rj, const Eigen::Vector3d &Vj, const Eigen::Vector3d &Baj, const Eigen::Vector3d &Bgj,
                                           const Eigen::Vector3d &G)
     {
         int O_P = 0, O_R = 3, O_V = 6, O_BA = 9, O_BG =12;
@@ -174,13 +195,17 @@ public:
         Eigen::Vector3d dba = Bai - linearized_ba;
         Eigen::Vector3d dbg = Bgi - linearized_bg;
 
-        Eigen::Quaterniond corrected_delta_q = delta_q * Utility::deltaQ(dq_dbg * dbg);
+        //Eigen::Quaterniond corrected_delta_q = delta_q * Utility::deltaQ(dq_dbg * dbg);
+        Sophus::SO3 dR_dbg = Sophus::SO3::exp(dq_dbg * dbg);
+        Sophus::SO3 delta_R = Sophus::SO3(delta_q.toRotationMatrix());
+        Sophus::SO3 corrected_delta_R = (delta_R * dR_dbg).inverse() * Sophus::SO3(Ri.transpose()) *Sophus::SO3(Rj);
+        //Eigen::Matrix3d corrected_delta_R = corrected_delta_q.toRotationMatrix();
         Eigen::Vector3d corrected_delta_v = delta_v + dv_dba * dba + dv_dbg * dbg;
         Eigen::Vector3d corrected_delta_p = delta_p + dp_dba * dba + dp_dbg * dbg;
 
-        residuals.block<3, 1>(O_P, 0) = Qi.inverse() * (0.5 * G* sum_dt * sum_dt + Pj - Pi - Vi * sum_dt) - corrected_delta_p;
-        residuals.block<3, 1>(O_R, 0) = 2 * (corrected_delta_q.inverse() * (Qi.inverse() * Qj)).vec();
-        residuals.block<3, 1>(O_V, 0) = Qi.inverse() * (G * sum_dt + Vj - Vi) - corrected_delta_v;
+        residuals.block<3, 1>(O_P, 0) = Ri.transpose()* (0.5 * G* sum_dt * sum_dt + Pj - Pi - Vi * sum_dt) - corrected_delta_p;
+        residuals.block<3, 1>(O_R, 0) = corrected_delta_R.log();
+        residuals.block<3, 1>(O_V, 0) = Ri.transpose() * (G * sum_dt + Vj - Vi) - corrected_delta_v;
         residuals.block<3, 1>(O_BA, 0) = Baj - Bai;
         residuals.block<3, 1>(O_BG, 0) = Bgj - Bgi;
         return residuals;
@@ -190,7 +215,7 @@ public:
     Eigen::Vector3d acc_0, gyr_0;
     Eigen::Vector3d acc_1, gyr_1;
 
-    const Eigen::Vector3d linearized_acc, linearized_gyr;
+    Eigen::Vector3d linearized_acc, linearized_gyr;
     Eigen::Vector3d linearized_ba, linearized_bg;
 
     Eigen::Matrix<double, 15, 15> jacobian, covariance;
@@ -207,8 +232,6 @@ public:
     std::vector<Eigen::Vector3d> acc_buf;
     std::vector<Eigen::Vector3d> gyr_buf;
 
-public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
 #endif //ORB_SLAM2_INTEGRATION_H

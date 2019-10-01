@@ -49,15 +49,16 @@ Frame::Frame(const Frame &frame)
      mvScaleFactors(frame.mvScaleFactors), mvInvScaleFactors(frame.mvInvScaleFactors),
      mvLevelSigma2(frame.mvLevelSigma2), mvInvLevelSigma2(frame.mvInvLevelSigma2),pcurrent_IMU_intergration(frame.pcurrent_IMU_intergration),
      Rc0bk(frame.Rc0bk),tc0ck(frame.tc0ck),
-     Ps(frame.Ps), Vs(frame.Vs), Rs(frame.Rs), mbVINSInitedFrame(frame.mbVINSInitedFrame)
+     Ps(frame.Ps), Vs(frame.Vs), Rs(frame.Rs), mbVINSInitedFrame(frame.mbVINSInitedFrame),
+     vIMUDataByCurrentFrame(frame.vIMUDataByCurrentFrame)
 {
     for(int i=0;i<FRAME_GRID_COLS;i++)
         for(int j=0; j<FRAME_GRID_ROWS; j++)
             mGrid[i][j]=frame.mGrid[i][j];
 
-    for(int i = 0 ; i < vIMUDataByCurrentFrame.size(); i++){
-        vIMUDataByCurrentFrame[i] = frame.vIMUDataByCurrentFrame[i];
-    }
+//    for(int i = 0 ; i < vIMUDataByCurrentFrame.size(); i++){
+//        vIMUDataByCurrentFrame[i] = frame.vIMUDataByCurrentFrame[i];
+//    }
 
     if(!frame.mTcw.empty())
         SetPose(frame.mTcw);

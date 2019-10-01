@@ -7,8 +7,8 @@ ENDIF()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -march=native")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")  #-O3
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -march=native") #-O3
 # Check C++11 or C++0x support
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -68,15 +68,14 @@ src/KeyFrameDatabase.cc
 src/Sim3Solver.cc
 src/Initializer.cc
 src/Viewer.cc
-src/estimator/parameter.h
-src/estimator/VertexState.h
+        src/estimator/VertexState.h
 src/estimator/VertexState.cpp
 src/estimator/so3.cpp
 src/estimator/so3.h
 src/estimator/utility.h
 src/estimator/g2otypes.h
 src/estimator/g2otypes.cpp
-        )
+        src/estimator/parameters.h src/estimator/parameter.cpp)
 
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}

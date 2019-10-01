@@ -14,7 +14,6 @@ namespace ORB_SLAM2
 typedef Eigen::Matrix<double, 15, 1> Vector15d;
 typedef Eigen::Matrix<double, 9, 1> Vector9d;
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
-
 class VertexState
 {
 public:
@@ -24,9 +23,10 @@ public:
     VertexState(KeyFrame* KF);
 
     void IncSmallPR(Vector6d dPR);  //small rao dong
-    void IncSmallV(Eigen::Vector3d dv); //small velocity
+    void IncSmallVBias(Vector9d dvbias); //small velocity bias
     void IncSmallBias(Vector6d dBias);
 
+    int id;
 
     Eigen::Matrix3d Rc0bk;
 

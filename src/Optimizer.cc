@@ -49,8 +49,7 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
     Eigen::Matrix4d Tcb = Tracking::Tbc.transpose();
     Eigen::Matrix3d Rcb = Tcb.topLeftCorner(3,3);
     Eigen::Vector3d tcb = Tcb.topRightCorner(3,1);
-
-    Eigen::Vector3d GravityW = gw;
+    //Eigen::Vector3d GravityW = gw;
     //cout<<gw.transpose()<<" ,"<<GravityW.transpose()<<endl;
 
     // All KeyFrame in Local window are optimized
@@ -61,6 +60,7 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
             cerr<<"!pKFI. why?? check"<<endl;
         pKFi->mnBALocalForKF = pCurKF->mnId;
     }
+
 
    // cout<<"Size: Optimizer::LocalBundleAdjustment: "<<lLocalKeyFrames.size()<<endl;
 
@@ -82,8 +82,17 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
         }
     }
 
-    // Fixed Keyframes. Keyframes that see Local MapPoints but that are not Local Keyframes
+
     list<KeyFrame*> lFixedCameras;
+    KeyFrame* pKFPrevLocal = lLocalKeyFrames.front()->lastKeyFrame;
+    if(pKFPrevLocal)
+    {
+        pKFPrevLocal->mnBAFixedForKF = pCurKF->mnId;
+        if(!pKFPrevLocal->isBad())
+        {
+            lFixedCameras.push_back(pKFPrevLocal);
+        }
+    }
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
         map<KeyFrame*,size_t> observations = (*lit)->GetObservations();
@@ -121,35 +130,28 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
     for(list<KeyFrame*>::const_iterator lit= lLocalKeyFrames.begin(); lit != lLocalKeyFrames.end(); lit++)
     {
         KeyFrame *pKFi = *lit;
-        int idKF = pKFi->mnId*3;
+        int idKF = pKFi->mnId*2;
+        //cout<<"local idkf:" <<pKFi->mnId<<endl;
         VertexState vs = VertexState(pKFi);
+        //cout<<"optimize Pi: "<<vs.P.transpose()<<endl;
+        //cout<<"optimize Ri: "<<vs.Rc0bk<<endl;
+        //cout<<"optimize Vi: "<<vs.V.transpose()<<endl;
         //Vertex of PR
-        {
-            g2o::VertexPR *vPR = new g2o::VertexPR();
 
-            vPR->setEstimate(vs);
-            vPR->setId(idKF);
-            vPR->setFixed(false);
-            optimizer.addVertex(vPR);
-        }
+        g2o::VertexPR *vPR = new g2o::VertexPR();
+        vPR->setEstimate(vs);
+        vPR->setId(idKF);
+        vPR->setFixed(false);
+        optimizer.addVertex(vPR);
 
-        //Vertex of V
-        {
-            g2o::VertexV *vV = new g2o::VertexV();
-            vV->setEstimate(vs);
-            vV->setId(idKF+1);
-            vV->setFixed(false);
-            optimizer.addVertex(vV);
-        }
+        //Vertex of V & bias
+        g2o::VertexVBias *vVBias = new g2o::VertexVBias();
+        vVBias->setEstimate(vs);
+        vVBias->setId(idKF+1);
+        vVBias->setFixed(false);
+        optimizer.addVertex(vVBias);
 
-        //Vertex of Bias
-        {
-            g2o::VertexBias *vBias = new g2o::VertexBias();
-            vBias->setEstimate(vs);
-            vBias->setId(idKF+2);
-            vBias->setFixed(false);
-            optimizer.addVertex(vBias);
-        }
+
 
 //        g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
 //        cv::Mat mTcw = pKFi->GetPose();
@@ -175,43 +177,46 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
 //        vSE3->setFixed(pKFi->mnId==0);
 //        optimizer.addVertex(vSE3);
 
-        if(idKF+2 > maxKFid)
+        if(idKF+1 > maxKFid)
         {
-            maxKFid = idKF +2;
+            maxKFid = idKF +1;
         }
     }
 
     //Set fixed Keyframe vertices
-    for(list<KeyFrame*>::const_iterator lit = lFixedCameras.begin(); lit!=lFixedCameras.end(); lit++)
-    {
-        KeyFrame *pKFi = *lit;
-        int idKF = pKFi->mnId*3;
-        VertexState vs = VertexState(pKFi);
-        {
-            g2o::VertexPR *vPR = new g2o::VertexPR();
-            vPR->setEstimate(vs);
-            vPR->setId(idKF);
-            vPR->setFixed(false);
-            optimizer.addVertex(vPR);
-        }
+//    for(list<KeyFrame*>::const_iterator lit = lFixedCameras.begin(); lit!=lFixedCameras.end(); lit++)
+//    {
+//        KeyFrame *pKFi = *lit;
+//        int idKF = pKFi->mnId*3;
+//
+//        if(pKFi == pKFPrevLocal)
+//        {
+//            cout<<"fixed idkf:" <<idKF<<endl;
+//            VertexState vs = VertexState(pKFi);
+//            g2o::VertexPR *vPR = new g2o::VertexPR();
+//            vPR->setEstimate(vs);
+//            vPR->setId(idKF);
+//            vPR->setFixed(false);
+//            optimizer.addVertex(vPR);
+//
+//
+//            //Vertex of V
+//            g2o::VertexV *vV = new g2o::VertexV();
+//            vV->setEstimate(vs);
+//            vV->setId(idKF+1);
+//            vV->setFixed(false);
+//            optimizer.addVertex(vV);
+//
+//            //Vertex of Bias
+//
+//            g2o::VertexBias *vBias = new g2o::VertexBias();
+//            vBias->setEstimate(vs);
+//            vBias->setId(idKF+2);
+//            vBias->setFixed(false);
+//            optimizer.addVertex(vBias);
+//
+//        }
 
-        //Vertex of V
-        {
-            g2o::VertexV *vV = new g2o::VertexV();
-            vV->setEstimate(vs);
-            vV->setId(idKF+1);
-            vV->setFixed(false);
-            optimizer.addVertex(vV);
-        }
-
-        //Vertex of Bias
-        {
-            g2o::VertexBias *vBias = new g2o::VertexBias();
-            vBias->setEstimate(vs);
-            vBias->setId(idKF+2);
-            vBias->setFixed(false);
-            optimizer.addVertex(vBias);
-        }
 
 //        g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
 //        cv::Mat mTcw = pKFi->GetPose();
@@ -235,51 +240,58 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
 //        vSE3->setFixed(true);
 //        optimizer.addVertex(vSE3);
 //
-        if(idKF+2 > maxKFid)
-        {
-            maxKFid = idKF +2;
-        }
-    }
-
-
-    const double thHuberStatePRVB = sqrt(30.5779); //30.5779 for 15DOF
-    //Set edge in the local window
-//    for(list<KeyFrame*>::const_iterator lit = lLocalKeyFrames.begin(); lit != lLocalKeyFrames.end(); lit++)
-//    {
-//        KeyFrame *pKF_j = *lit;
-//        KeyFrame *pKF_i = pKF_j->lastKeyFrame;
-//        if(!pKF_i)
-//            cout<<"pKF_i NULL"<<endl;
-//
-//        //Edges of P, V, R, Bias which are the 15DOF
+//        if(idKF+2 > maxKFid)
 //        {
-//            g2o::EdgeStatePRVB *epvrb = new g2o::EdgeStatePRVB();
-//
-//            epvrb->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(3*pKF_i->mnId)));  //PR
-//
-//            epvrb->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(3*pKF_j->mnId)));
-//
-//            epvrb->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(3*pKF_i->mnId+1))); //V
-//
-//            epvrb->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(3*pKF_j->mnId+1)));
-//
-//            epvrb->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(3*pKF_i->mnId+2))); //bias
-//
-//            epvrb->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(3*pKF_j->mnId+2)));
-//
-//            epvrb->setMeasurement(pKF_j->pcurrent_IMU_intergration);  // do not forget to do
-//            Eigen::Matrix<double, 15, 15> covpvrb = pKF_j->pcurrent_IMU_intergration->covariance;
-//            epvrb->setInformation(covpvrb.inverse());
-//            epvrb->setGravity(GravityW); //tracking::g
-//            g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber;
-//            epvrb->setRobustKernel(rk);
-//            rk->setDelta(thHuberStatePRVB);
-//            optimizer.addEdge(epvrb);
+//            maxKFid = idKF +2;
 //        }
 //
 //    }
-    //cout<<"Set edge in the local window FINISH"<<endl;
-    //set map point vertices
+
+    //for debug
+    //vector<g2o::EdgeStatePRVB*> vpEdgePRVB;
+
+    const double thHuberStatePRVB = sqrt(30.5779); //30.5779 for 15DOF
+   // cout<<"size of lLocalKeyFrames: "<<lLocalKeyFrames.size()<<endl;
+
+    //Set edge in the local window
+    for(list<KeyFrame*>::const_iterator lit = lLocalKeyFrames.begin(); next(lit) != lLocalKeyFrames.end(); lit++)
+    {
+
+        KeyFrame *pKF_j = *next(lit);
+        KeyFrame *pKF_i = *lit;
+        //KeyFrame *pKF_j = *next(lit);
+        if(!pKF_i)
+            cout<<"pKF_i NULL"<<endl;
+
+        //Edges of P, V, R, Bias which are the 15DOF
+
+        g2o::EdgeStatePRVB *epvrb = new g2o::EdgeStatePRVB();
+
+        epvrb->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(2*pKF_i->mnId)));  //PR i
+
+        epvrb->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(2*pKF_i->mnId+1))); //V&bias i
+
+        epvrb->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(2*pKF_j->mnId))); //PR j
+
+        epvrb->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(2*pKF_j->mnId+1)));//V&bias j
+
+
+        Integration current_IMU_intergration;
+        current_IMU_intergration = *(pKF_j->pcurrent_IMU_intergration);
+        epvrb->setMeasurement(current_IMU_intergration);  // do not forget to do
+        Eigen::Matrix<double, 15, 15> covpvrb = pKF_j->pcurrent_IMU_intergration->covariance;
+        epvrb->setInformation(covpvrb.inverse());
+        epvrb->setGravity(gw); //tracking::g
+        g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber;
+        epvrb->setRobustKernel(rk);
+        rk->setDelta(thHuberStatePRVB);
+        optimizer.addEdge(epvrb);
+        //vpEdgePRVB.push_back(epvrb);
+    }
+
+
+//    cout<<"Set edge in the local window FINISH"<<endl;
+//    set map point vertices
 //    const int nExpectedSize = (lLocalKeyFrames.size()+lFixedCameras.size())*lLocalMapPoints.size();
 //
 //    vector<g2o::EdgeStereoSE3ProjectXYZ*> vpEdgesStereo;
@@ -346,22 +358,21 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
 //            }
 //        }
 //    }
-    //cout<<"Set map point vertices FINISH"<<endl;
+//    cout<<"Set map point vertices FINISH"<<endl;
 //
 //    if(pbStopFlag)
 //        if(*pbStopFlag)
 //            return;
-
+//
 
 
     optimizer.initializeOptimization();
     optimizer.optimize(5);
-
     bool bDoMore= true;
 
-    if(pbStopFlag)
-        if(*pbStopFlag)
-            bDoMore = false;
+//    if(pbStopFlag)
+//        if(*pbStopFlag)
+//            bDoMore = false;
 
 //    if(bDoMore)
 //    {
@@ -424,7 +435,7 @@ void Optimizer::LocalVisualInertialBA(KeyFrame* pCurKF, const list<KeyFrame*> &l
 //            pMPi->EraseObservation(pKFi);
 //        }
 //    }
-    cout<<"here Map mutex"<<endl;
+    //cout<<"here Map mutex"<<endl;
     // Recover optimized data
 
     //Keyframes
